@@ -3,6 +3,22 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { QuizQuestion, AcademicPassage } from "../types";
 
 /**
+ * 環境変数からAPIキーを安全に取得します。
+ * process変数が存在しないブラウザ環境でのクラッシュを防止します。
+ */
+const getSafeApiKey = (): string => {
+  try {
+    // 1. process.env.API_KEY が存在するか確認
+    if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
+      return process.env.API_KEY;
+    }
+  } catch (e) {
+    // アクセスエラー時は無視
+  }
+  return '';
+};
+
+/**
  * Helper to execute API calls with exponential backoff for 429 errors.
  */
 async function withRetry<T>(fn: () => Promise<T>, maxRetries = 3, initialDelay = 2000): Promise<T> {
@@ -31,8 +47,9 @@ async function withRetry<T>(fn: () => Promise<T>, maxRetries = 3, initialDelay =
 
 export const fetchQuizQuestion = async (): Promise<QuizQuestion> => {
   return withRetry(async () => {
-    // 常に最新のAPIキーを使用するため、呼び出し直前にインスタンスを生成
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+    const apiKey = getSafeApiKey();
+    // API呼び出し直前にインスタンスを生成
+    const ai = new GoogleGenAI({ apiKey });
     
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
@@ -82,8 +99,8 @@ export const fetchQuizQuestion = async (): Promise<QuizQuestion> => {
 
 export const fetchAcademicPassage = async (): Promise<AcademicPassage> => {
   return withRetry(async () => {
-    // 常に最新のAPIキーを使用するため、呼び出し直前にインスタンスを生成
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+    const apiKey = getSafeApiKey();
+    const ai = new GoogleGenAI({ apiKey });
 
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
