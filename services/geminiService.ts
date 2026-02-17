@@ -2,8 +2,6 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { QuizQuestion, AcademicPassage } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
-
 /**
  * Helper to execute API calls with exponential backoff for 429 errors.
  */
@@ -14,7 +12,10 @@ async function withRetry<T>(fn: () => Promise<T>, maxRetries = 3, initialDelay =
       return await fn();
     } catch (error: any) {
       lastError = error;
-      const isQuotaError = error.status === 429 || error.message?.includes("429") || error.message?.includes("RESOURCE_EXHAUSTED");
+      const isQuotaError = 
+        error.status === 429 || 
+        error.message?.includes("429") || 
+        error.message?.includes("RESOURCE_EXHAUSTED");
       
       if (i < maxRetries && isQuotaError) {
         const delay = initialDelay * Math.pow(2, i);
@@ -30,6 +31,9 @@ async function withRetry<T>(fn: () => Promise<T>, maxRetries = 3, initialDelay =
 
 export const fetchQuizQuestion = async (): Promise<QuizQuestion> => {
   return withRetry(async () => {
+    // 常に最新のAPIキーを使用するため、呼び出し直前にインスタンスを生成
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+    
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: "Generate an IELTS/TOEFL level (C1/C2) vocabulary quiz question focusing on etymology. IMPORTANT: The 'options' must be in the format 'English definition (Japanese translation)'. The 'etymology.explanation' and 'familyWords.meaning' should be written in Japanese for a high-level learner.",
@@ -78,6 +82,9 @@ export const fetchQuizQuestion = async (): Promise<QuizQuestion> => {
 
 export const fetchAcademicPassage = async (): Promise<AcademicPassage> => {
   return withRetry(async () => {
+    // 常に最新のAPIキーを使用するため、呼び出し直前にインスタンスを生成
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: "Generate an academic passage (150-200 words) about science, history, or psychology for IELTS/TOEFL. Divide it into exactly 7 logical chunks. Provide the explanation of logical flow and translation in Japanese.",
