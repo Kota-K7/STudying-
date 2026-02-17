@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Check, X, ArrowRight, Share2, Sparkles, Loader2, Home, AlertCircle, RefreshCcw } from 'lucide-react';
+import { Check, X, ArrowRight, Loader2, Home, AlertCircle, RefreshCcw, Sparkles } from 'lucide-react';
 import { QuizQuestion } from '../types';
 import { fetchQuizQuestion } from '../services/geminiService';
 
@@ -27,11 +27,7 @@ const Quiz: React.FC<QuizProps> = ({ onHome }) => {
       setQuestion(data);
     } catch (err: any) {
       console.error(err);
-      if (err.message?.includes("429") || err.message?.includes("RESOURCE_EXHAUSTED")) {
-        setError("APIの利用制限に達しました。しばらく待ってから再度お試しください。");
-      } else {
-        setError("問題の取得中にエラーが発生しました。接続を確認してください。");
-      }
+      setError("問題の取得に失敗しました。");
     } finally {
       setLoading(false);
     }
@@ -56,64 +52,52 @@ const Quiz: React.FC<QuizProps> = ({ onHome }) => {
     }));
   };
 
-  const handleShare = () => {
-    const text = `Linguist Vibeで「${question?.word}」を解剖。系譜を辿り、深淵へ。 🚀 #LinguistVibe #Academic`;
-    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank');
-  };
-
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 gap-4">
-        <Loader2 className="animate-spin text-amber-500" size={48} />
-        <p className="text-slate-400 font-serif italic">言語の構成要素を解剖中...</p>
+      <div className="flex flex-col items-center justify-center py-40 gap-10 fade-up">
+        <Loader2 className="animate-spin text-amber-500" size={40} />
+        <p className="text-amber-500/80 font-serif italic text-lg tracking-[0.3em]">Preparing Inquiry...</p>
       </div>
     );
   }
 
-  if (error) {
+  if (error || !question) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 gap-6 animate-in fade-in duration-500 max-w-md mx-auto text-center">
-        <div className="w-16 h-16 bg-rose-500/10 rounded-full flex items-center justify-center text-rose-500">
-          <AlertCircle size={32} />
-        </div>
-        <div className="space-y-2">
-          <h3 className="text-xl font-bold font-serif">通信エラー</h3>
-          <p className="text-slate-400 leading-relaxed">{error}</p>
-        </div>
-        <div className="flex gap-4 w-full">
-          <button onClick={onHome} className="flex-1 px-6 py-3 glass-card border-slate-700 rounded-xl font-bold text-slate-300">
-            ホームへ
-          </button>
-          <button onClick={loadQuestion} className="flex-1 px-6 py-3 bg-slate-100 text-slate-950 rounded-xl font-bold flex items-center justify-center gap-2">
-            <RefreshCcw size={18} /> 再試行
-          </button>
-        </div>
+      <div className="flex flex-col items-center justify-center py-20 gap-8 text-center fade-up">
+        <AlertCircle className="text-rose-500" size={40} />
+        <p className="text-slate-400 font-academic">{error}</p>
+        <button onClick={loadQuestion} className="text-xs uppercase tracking-widest text-amber-500 border-b border-amber-500/20 pb-1">
+          Retry Dissection
+        </button>
       </div>
     );
   }
-
-  if (!question) return null;
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <div className="text-center space-y-4">
-        <span className="text-[10px] uppercase tracking-[0.3em] text-amber-500 font-bold">Etymology Challenge</span>
-        <h2 className="text-5xl font-serif font-bold text-slate-100">{question.word}</h2>
-        <p className="text-slate-400 italic">最も適切な定義を選択してください</p>
+    <div className="space-y-20 fade-up pb-32">
+      <div className="text-center space-y-8">
+        <div className="text-[10px] uppercase tracking-[0.5em] text-amber-500/60 font-bold">Lexical Inquiry</div>
+        <h2 className="text-5xl md:text-7xl font-serif text-white tracking-tight italic font-bold text-shadow-elegant">
+          {question.word}
+        </h2>
+        <div className="w-12 h-[1px] bg-amber-500/20 mx-auto"></div>
+        <p className="text-slate-300 font-academic text-base md:text-lg font-medium">
+          文脈に最も適した意味を以下より選択してください。
+        </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="max-w-xl mx-auto space-y-3">
         {question.options.map((option, idx) => {
           const isSelected = selectedOption === option;
           const isTargetCorrect = option === question.correctAnswer;
           
-          let btnClass = "p-5 glass-card rounded-xl text-left transition-all duration-300 border-l-4 ";
+          let itemClass = "w-full text-left py-5 px-8 rounded-xl transition-all duration-500 flex items-center justify-between group gold-border ";
           if (!selectedOption) {
-            btnClass += "hover:bg-slate-800 border-slate-700 hover:border-amber-500";
+            itemClass += "bg-slate-950/40 hover:bg-slate-900 hover:gold-border-focus";
           } else {
-            if (isTargetCorrect) btnClass += "bg-emerald-500/10 border-emerald-500 text-emerald-400 ring-1 ring-emerald-500/50";
-            else if (isSelected && !isTargetCorrect) btnClass += "bg-rose-500/10 border-rose-500 text-rose-400 ring-1 ring-rose-500/50";
-            else btnClass += "opacity-50 border-slate-800";
+            if (isTargetCorrect) itemClass += "bg-emerald-500/10 border-emerald-500/50 text-emerald-100";
+            else if (isSelected) itemClass += "bg-rose-500/10 border-rose-500/50 text-rose-100";
+            else itemClass += "opacity-10 grayscale pointer-events-none";
           }
 
           return (
@@ -121,14 +105,15 @@ const Quiz: React.FC<QuizProps> = ({ onHome }) => {
               key={idx}
               disabled={!!selectedOption}
               onClick={() => handleSelect(option)}
-              className={btnClass}
+              className={itemClass}
             >
-              <div className="flex items-start justify-between gap-2">
-                <span className="text-base md:text-lg leading-snug">{option}</span>
-                <div className="flex-shrink-0 mt-1">
-                  {selectedOption && isTargetCorrect && <Check size={18} />}
-                  {selectedOption && isSelected && !isTargetCorrect && <X size={18} />}
-                </div>
+              <span className="text-sm md:text-base font-academic font-medium tracking-wide leading-relaxed">
+                {option}
+              </span>
+              <div className="shrink-0 ml-6 opacity-0 group-hover:opacity-100 transition-opacity">
+                {selectedOption && isTargetCorrect && <Check className="text-emerald-500" size={20} />}
+                {selectedOption && isSelected && !isTargetCorrect && <X className="text-rose-500" size={20} />}
+                {!selectedOption && <ArrowRight size={16} className="text-amber-500/60" />}
               </div>
             </button>
           );
@@ -136,49 +121,42 @@ const Quiz: React.FC<QuizProps> = ({ onHome }) => {
       </div>
 
       {showExplanation && (
-        <div className="space-y-6 animate-in zoom-in-95 duration-500">
-          <div className="glass-card rounded-2xl p-8 border border-slate-700">
-            <h3 className="flex items-center gap-2 text-xl font-serif font-bold text-amber-500 mb-6">
-              <Sparkles size={20} />
-              語源の解剖
+        <div className="space-y-16 fade-up max-w-2xl mx-auto">
+          <div className="pt-20 space-y-12 border-t border-amber-500/10">
+            <h3 className="flex items-center justify-center gap-3 text-center text-xs uppercase tracking-[0.4em] text-amber-500 font-bold">
+              <Sparkles size={16} /> Etymological Anatomy
             </h3>
             
-            <div className="flex flex-wrap gap-4 mb-8">
-              {question.etymology.prefix && (
-                <div className="flex-1 min-w-[100px] p-3 bg-slate-900/50 rounded-lg border border-slate-800">
-                  <div className="text-[10px] uppercase tracking-widest text-slate-500 mb-1">Prefix</div>
-                  <div className="text-lg font-bold text-amber-200">{question.etymology.prefix}</div>
-                </div>
-              )}
-              {question.etymology.root && (
-                <div className="flex-1 min-w-[100px] p-3 bg-slate-900/50 rounded-lg border border-slate-800">
-                  <div className="text-[10px] uppercase tracking-widest text-slate-500 mb-1">Root</div>
-                  <div className="text-lg font-bold text-amber-200">{question.etymology.root}</div>
-                </div>
-              )}
-              {question.etymology.suffix && (
-                <div className="flex-1 min-w-[100px] p-3 bg-slate-900/50 rounded-lg border border-slate-800">
-                  <div className="text-[10px] uppercase tracking-widest text-slate-500 mb-1">Suffix</div>
-                  <div className="text-lg font-bold text-amber-200">{question.etymology.suffix}</div>
-                </div>
-              )}
+            <div className="flex justify-center gap-12 text-center">
+              {[
+                { label: 'Prefix', value: question.etymology.prefix },
+                { label: 'Root', value: question.etymology.root },
+                { label: 'Suffix', value: question.etymology.suffix }
+              ].map((item) => (
+                item.value && (
+                  <div key={item.label} className="space-y-2">
+                    <div className="text-[9px] uppercase tracking-widest text-slate-500 font-bold">{item.label}</div>
+                    <div className="text-2xl font-serif italic text-amber-200 font-bold">{item.value}</div>
+                  </div>
+                )
+              ))}
             </div>
 
-            <div className="space-y-4">
-              <p className="text-slate-300 leading-relaxed text-lg">
+            <div className="bg-slate-950 p-10 rounded-3xl gold-border-focus space-y-8">
+              <p className="text-slate-200 leading-relaxed text-lg font-academic font-medium italic">
                 {question.etymology.explanation}
               </p>
               
-              <div className="pt-6 border-t border-slate-800">
-                <h4 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4">同じ語源を持つ仲間</h4>
-                <div className="flex flex-wrap gap-3">
+              <div className="pt-8 border-t border-white/5 space-y-6">
+                <div className="text-[10px] uppercase tracking-widest text-amber-500/40 font-bold">Related Words</div>
+                <div className="flex flex-wrap gap-4">
                   {question.familyWords.map((family, idx) => (
                     <div key={idx} className="group relative">
-                      <span className="px-3 py-1 bg-slate-800 rounded-full text-sm border border-slate-700 cursor-help hover:border-amber-500 transition-colors">
+                      <span className="px-5 py-2.5 bg-slate-900 rounded-lg text-sm font-serif italic text-amber-200 border border-amber-500/10 transition-all hover:bg-amber-500 hover:text-slate-950">
                         {family.word}
                       </span>
-                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-slate-900 border border-slate-700 rounded-lg text-xs opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-2xl">
-                        {family.meaning}
+                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-56 p-4 bg-slate-950 gold-border rounded-xl text-[12px] opacity-0 group-hover:opacity-100 transition-all pointer-events-none z-50 shadow-2xl backdrop-blur-xl">
+                        <p className="text-slate-300 font-academic leading-relaxed">{family.meaning}</p>
                       </div>
                     </div>
                   ))}
@@ -187,27 +165,18 @@ const Quiz: React.FC<QuizProps> = ({ onHome }) => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="pt-10 flex justify-center gap-10 items-center">
             <button
               onClick={onHome}
-              className="flex items-center justify-center gap-2 p-4 glass-card border-slate-700 hover:border-slate-500 rounded-xl transition-colors font-bold text-slate-300"
+              className="text-[11px] uppercase tracking-widest text-slate-500 hover:text-amber-500 transition-colors font-bold"
             >
-              <Home size={20} /> ホームへ
+              Dashboard
             </button>
             <button
               onClick={loadQuestion}
-              className="sm:col-span-2 flex items-center justify-center gap-2 py-4 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl transition-all active:scale-95 shadow-lg shadow-amber-500/20"
+              className="px-12 py-4 bg-gradient-to-r from-amber-500 to-orange-600 text-slate-950 text-sm font-bold rounded-xl transition-all hover:scale-105 active:scale-95 shadow-xl shadow-amber-500/20 flex items-center gap-3"
             >
-              次の単語へ <ArrowRight size={20} />
-            </button>
-          </div>
-          
-          <div className="flex justify-center">
-            <button
-              onClick={handleShare}
-              className="flex items-center gap-2 text-slate-500 hover:text-slate-300 text-sm transition-colors"
-            >
-              <Share2 size={16} /> 成果を記録する
+              Next Word <ArrowRight size={18} />
             </button>
           </div>
         </div>
